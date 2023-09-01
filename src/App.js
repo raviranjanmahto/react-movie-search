@@ -7,7 +7,7 @@ const average = arr =>
 const KEY = process.env.REACT_APP_KEY;
 
 export default function App() {
-  const [query, setQuery] = useState("inception");
+  const [query, setQuery] = useState("test");
 
   const [movies, setMovies] = useState([]);
   const [watched, setWatched] = useState([]);
@@ -33,12 +33,15 @@ export default function App() {
 
   useEffect(
     function () {
+      const controller = new AbortController();
+
       async function fetchMovies() {
         try {
           setIsLoading(true);
           setError("");
           const res = await fetch(
-            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`
+            `http://www.omdbapi.com/?apikey=${KEY}&s=${query}`,
+            { signal: controller.signal }
           );
           if (!res.ok)
             throw new Error("Something went wrong with fetching movies");
@@ -46,7 +49,7 @@ export default function App() {
           if (data.Response === "False") throw new Error("Movie not found");
           setMovies(data.Search);
         } catch (error) {
-          setError(error.message);
+          if (error.name !== "AbortError") setError(error.message);
         } finally {
           setIsLoading(false);
         }
@@ -56,7 +59,14 @@ export default function App() {
         setError("");
         return;
       }
-      fetchMovies();
+      setTimeout(() => {
+        handleCloseMovie();
+        fetchMovies();
+      }, 500);
+
+      return function () {
+        controller.abort();
+      };
     },
     [query]
   );
@@ -227,6 +237,20 @@ function MovieDetails({ selectedId, onCloseMovie, onAddWatched, watched }) {
     onAddWatched(newWatchMovie);
     onCloseMovie();
   }
+
+  useEffect(
+    function () {
+      function callback(e) {
+        if (e.code === "Escape") onCloseMovie();
+      }
+      document.addEventListener("keydown", callback);
+
+      return function () {
+        document.removeEventListener("keydown", callback);
+      };
+    },
+    [onCloseMovie]
+  );
 
   useEffect(
     function () {

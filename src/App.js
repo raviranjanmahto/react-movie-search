@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import StarRating from "./StarRating";
 
 const average = arr =>
@@ -7,7 +7,7 @@ const average = arr =>
 const KEY = process.env.REACT_APP_KEY;
 
 export default function App() {
-  const [query, setQuery] = useState("test");
+  const [query, setQuery] = useState("");
 
   const [movies, setMovies] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -151,6 +151,25 @@ function Logo() {
 }
 
 function Search({ query, setQuery }) {
+  const inputEl = useRef(null);
+
+  useEffect(
+    function () {
+      function callback(e) {
+        if (document.activeElement === inputEl.current) return;
+
+        if (e.code === "Enter") {
+          inputEl.current.focus();
+          setQuery("");
+        }
+      }
+
+      document.addEventListener("keydown", callback);
+      return () => document.removeEventListener("keydown", callback);
+    },
+    [setQuery]
+  );
+
   return (
     <input
       className='search'
@@ -158,6 +177,8 @@ function Search({ query, setQuery }) {
       placeholder='Search movies...'
       value={query}
       onChange={e => setQuery(e.target.value)}
+      ref={inputEl}
+      autoFocus
     />
   );
 }
